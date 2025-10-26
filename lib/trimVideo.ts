@@ -1,24 +1,27 @@
-import * as FileSystem from "expo-file-system";
+
+import * as FileSystem from "expo-file-system/legacy";
 import * as MediaLibrary from "expo-media-library";
 import { trimVideo } from "expo-trim-video";
 import { Platform } from "react-native";
 
 async function ensureContentUri(fileUri: string): Promise<string> {
   if (Platform.OS !== "android") return fileUri;
-
   try {
     const perm = await MediaLibrary.requestPermissionsAsync();
     if (!perm.granted) throw new Error("MediaLibrary permission denied");
 
-    // ✅ MediaStore’a geçici kopya oluştur
-    const destPath = `${FileSystem.documentDirectory}temp_${Date.now()}.mp4`;
+    
+    const destPath = `${FileSystem.cacheDirectory}temp_${Date.now()}.mp4`;
     await FileSystem.copyAsync({ from: fileUri, to: destPath });
 
     const asset = await MediaLibrary.createAssetAsync(destPath);
-    console.log("📂 Converted to content://", asset.localUri);
-    return asset.localUri || fileUri;
+
+
+    const contentUri = asset.uri || asset.localUri || fileUri;
+    console.log("📂 Converted (content/file) URI =", contentUri);
+    return contentUri;
   } catch (e) {
-    console.warn("⚠️ Could not copy to MediaStore, fallback to file://:", e);
+    console.warn("⚠️ ensureContentUri fallback:", e);
     return fileUri;
   }
 }
@@ -26,27 +29,24 @@ async function ensureContentUri(fileUri: string): Promise<string> {
 export async function trimVideoFile(uri: string, start: number, end: number) {
   if (!uri) throw new Error("URI is required (empty)");
 
-  // 1️⃣ content:// oluştur
-  const contentUri = await ensureContentUri(uri);
+  
+  const inputUri = await ensureContentUri(uri);
 
-  // 2️⃣ cache fallback
-  const baseCache =
-    FileSystem.cacheDirectory ||
-    FileSystem.documentDirectory ||
-    "/data/user/0/com.muhammed2323.VideoDiaryApp/cache/";
-  const outputUri = `${baseCache}trimmed_${Date.now()}.mp4`;
-
-  console.log("🎬 trimVideo input =", contentUri);
-  console.log("🎬 trimVideo output =", outputUri);
-
-  // 3️⃣ Trim çağrısı
+ 
+  console.log("🎬 trimVideo input =", inputUri);
   const result = await trimVideo({
-    source: contentUri,
+    uri: inputUri,   
     start,
     end,
-    destination: outputUri,
   });
 
-  console.log("✅ Trim success:", result);
-  return result.destination || outputUri;
+  
+  console.log("✅ Trim success, output uri =", result?.uri);
+  if (!result?.uri) {
+    throw new Error("Trim returned no uri");
+  }
+
+  
+
+  return result.uri;
 }

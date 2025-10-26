@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import CropScrubber from '../../components/CropScrubber';
-import { trimVideoFile,getRealFileUri } from '../../lib/trimVideo';
+import { trimVideoFile } from '../../lib/trimVideo';
 
 export default function TrimStep() {
   const { uri } = useLocalSearchParams<{ uri: string }>();
