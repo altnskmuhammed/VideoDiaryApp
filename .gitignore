@@ -39,6 +39,8 @@ yarn-error.*
 *.tsbuildinfo
 
 # generated native folders
-/ios
-/android
+android/.gradle/
+android/app/build/
+android/build/
+*.keystore
 .vscode/
